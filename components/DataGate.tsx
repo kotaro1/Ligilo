@@ -6,20 +6,20 @@ import { useLigilo } from "@/lib/data";
 export function DataGate({ children }: { children: React.ReactNode }) {
   const { loading, error, words } = useLigilo();
 
-  if (loading) return <p className="text-sm text-neutral-500">読み込み中...</p>;
+  if (loading) return <p className="text-sm text-muted">読み込み中...</p>;
   if (error && words.length === 0) {
-    return <p className="text-sm text-red-600">読み込みに失敗しました: {error}</p>;
+    return <p className="text-sm text-hard">読み込みに失敗しました: {error}</p>;
   }
   if (words.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-muted">
         単語がまだ登録されていません。単語データのSQLをSupabaseで実行してください。
       </p>
     );
   }
   return (
     <>
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 text-sm text-hard">{error}</p>}
       {children}
     </>
   );

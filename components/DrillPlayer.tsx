@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLigilo } from "@/lib/data";
 import { statusOf } from "@/lib/drill";
+import { drillKeyAction } from "@/lib/drillKeys";
+import { setSoundEnabled, speakChinese, useSoundEnabled } from "@/lib/speech";
 import { StatusButtons } from "@/components/StatusButtons";
+import { RidgeLine } from "@/components/Scenery";
 import {
   DIRECTION_LABEL,
   STATUS_LABEL,
@@ -17,6 +21,7 @@ const STATUSES: Status[] = ["none", "easy", "hard"];
 
 export function DrillPlayer({ direction }: { direction: Direction }) {
   const { words, statuses, progress, setStatus, setIndex } = useLigilo();
+  const sound = useSoundEnabled();
   const drill = progress[direction];
   const wordById = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
   const [flipped, setFlipped] = useState(false);
@@ -24,7 +29,10 @@ export function DrillPlayer({ direction }: { direction: Direction }) {
   if (!drill || drill.wordIds.length === 0) {
     return (
       <p className="text-sm">
-        出題がありません。<Link href="/" className="underline">ホームで出題を作る</Link>
+        出題がありません。
+        <Link href="/" className="underline">
+          ホームで出題を作る
+        </Link>
       </p>
     );
   }
@@ -41,29 +49,30 @@ export function DrillPlayer({ direction }: { direction: Direction }) {
     const counts: Record<Status, number> = { none: 0, easy: 0, hard: 0 };
     for (const id of drill.wordIds) counts[statusOf(statuses, id, direction)]++;
     return (
-      <div className="space-y-6 text-center">
-        <h1 className="text-xl font-semibold">おつかれさま！</h1>
-        <p className="text-sm text-neutral-500">
+      <div className="rise space-y-6 rounded-3xl border border-line bg-surface p-8 text-center">
+        <RidgeLine className="mx-auto w-40 text-muted" />
+        <h1 className="font-serif-jp text-2xl font-bold">おつかれさま</h1>
+        <p className="text-sm text-muted">
           {DIRECTION_LABEL[direction]} · {total}枚
         </p>
-        <div className="flex justify-center gap-6">
+        <div className="flex justify-center gap-8">
           {STATUSES.map((s) => (
             <div key={s}>
-              <div className="text-2xl font-semibold">{counts[s]}</div>
-              <div className="text-sm text-neutral-500">{STATUS_LABEL[s]}</div>
+              <div className="font-serif-jp text-3xl font-bold">{counts[s]}</div>
+              <div className="text-sm text-muted">{STATUS_LABEL[s]}</div>
             </div>
           ))}
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => go(total - 1)}
-            className="flex-1 rounded-xl border border-neutral-300 py-3 dark:border-neutral-700"
+            className="flex-1 rounded-xl border border-line py-3 hover:bg-sunk"
           >
             最後のカードに戻る
           </button>
           <Link
             href="/"
-            className="flex-1 rounded-xl bg-neutral-900 py-3 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            className="flex-1 rounded-xl bg-primary py-3 font-medium text-primary-ink"
           >
             ホームへ
           </Link>
@@ -84,6 +93,11 @@ export function DrillPlayer({ direction }: { direction: Direction }) {
     );
   }
 
+  function flip() {
+    setFlipped(true);
+    if (sound && word) speakChinese(word.hanzi);
+  }
+
   return (
     <Card
       key={word.id}
@@ -93,7 +107,9 @@ export function DrillPlayer({ direction }: { direction: Direction }) {
       total={total}
       status={statusOf(statuses, word.id, direction)}
       flipped={flipped}
-      onFlip={() => setFlipped(true)}
+      sound={sound}
+      onFlip={flip}
+      onReplay={() => speakChinese(word.hanzi)}
       onPrev={index > 0 ? () => go(index - 1) : undefined}
       onNext={() => go(index + 1)}
       onSelect={(s) => {
@@ -104,6 +120,19 @@ export function DrillPlayer({ direction }: { direction: Direction }) {
   );
 }
 
+function SpeakerIcon({ muted }: { muted?: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+      {muted ? (
+        <path d="m16 9 5 6m0-6-5 6" />
+      ) : (
+        <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" />
+      )}
+    </svg>
+  );
+}
+
 function Card({
   word,
   direction,
@@ -111,7 +140,9 @@ function Card({
   total,
   status,
   flipped,
+  sound,
   onFlip,
+  onReplay,
   onPrev,
   onNext,
   onSelect,
@@ -122,74 +153,129 @@ function Card({
   total: number;
   status: Status;
   flipped: boolean;
+  sound: boolean;
   onFlip: () => void;
+  onReplay: () => void;
   onPrev?: () => void;
   onNext: () => void;
   onSelect: (status: Status) => void;
 }) {
+  const router = useRouter();
   const toPinyin = direction === "hanzi_to_pinyin";
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      const action = drillKeyAction(e.key, flipped);
+      if (!action) return;
+      e.preventDefault();
+      // A focused button would also fire its own click on Space/Enter.
+      (document.activeElement as HTMLElement | null)?.blur();
+      if (e.repeat && action.type !== "prev" && action.type !== "next") return;
+      switch (action.type) {
+        case "flip":
+          onFlip();
+          break;
+        case "next":
+          onNext();
+          break;
+        case "prev":
+          onPrev?.();
+          break;
+        case "replay":
+          onReplay();
+          break;
+        case "status":
+          onSelect(action.status);
+          break;
+        case "exit":
+          router.push("/");
+          break;
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [flipped, onFlip, onNext, onPrev, onReplay, onSelect, router]);
+
+  const hanzi = (
+    <p className="font-serif-sc text-7xl font-medium leading-tight">
+      {word.hanzi}
+      {word.posNote && (
+        <span className="ml-2 align-middle font-sans text-sm font-normal text-muted">
+          {word.posNote}
+        </span>
+      )}
+    </p>
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between text-sm text-neutral-500">
-        <Link href="/" className="underline">
-          やめる
+    <div className="rise space-y-4">
+      <div className="flex items-center justify-between text-sm text-muted">
+        <Link href="/" className="hover:text-ink">
+          ← やめる
         </Link>
         <span>
           {index + 1} / {total}
         </span>
+        <button
+          onClick={() => setSoundEnabled(!sound)}
+          className="flex items-center gap-1 hover:text-ink"
+          aria-label={sound ? "音声をオフにする" : "音声をオンにする"}
+        >
+          <SpeakerIcon muted={!sound} />
+          {sound ? "音声 ON" : "音声 OFF"}
+        </button>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-sunk">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${(index / total) * 100}%` }}
+        />
       </div>
 
       <div
-        className="flex min-h-72 flex-col items-center justify-center gap-4 rounded-2xl bg-white p-6 text-center shadow-sm dark:bg-neutral-900"
+        className="flex min-h-80 flex-col items-center justify-center gap-4 rounded-3xl border border-line bg-surface p-6 text-center shadow-sm"
         onClick={flipped ? undefined : onFlip}
       >
+        <RidgeLine className="w-32 text-line" />
         {!flipped ? (
           <>
-            <p className="text-xs text-neutral-400">章{word.chapter}</p>
+            <p className="text-xs tracking-widest text-muted">第{word.chapter}章</p>
             {toPinyin ? (
-              <p className="text-6xl font-medium">
-                {word.hanzi}
-                {word.posNote && (
-                  <span className="ml-2 align-middle text-sm font-normal text-neutral-500">
-                    {word.posNote}
-                  </span>
-                )}
-              </p>
+              hanzi
             ) : (
               <p className="text-4xl font-medium">{word.pinyin || "（ピンイン未設定）"}</p>
             )}
-            <p className="text-sm text-neutral-400">タップしてめくる</p>
+            <p className="text-sm text-muted">タップしてめくる</p>
           </>
         ) : (
           <>
             {toPinyin ? (
               <>
                 <p className="text-4xl font-medium">{word.pinyin || "（ピンイン未設定）"}</p>
-                <p className="text-2xl text-neutral-500">{word.hanzi}</p>
+                <p className="font-serif-sc text-3xl text-muted">{word.hanzi}</p>
               </>
             ) : (
               <>
-                <p className="text-6xl font-medium">
-                  {word.hanzi}
-                  {word.posNote && (
-                    <span className="ml-2 align-middle text-sm font-normal text-neutral-500">
-                      {word.posNote}
-                    </span>
-                  )}
-                </p>
-                <p className="text-2xl text-neutral-500">{word.pinyin}</p>
+                {hanzi}
+                <p className="text-2xl text-muted">{word.pinyin}</p>
               </>
             )}
-            <p className="text-lg">{word.meaning || "（意味未設定）"}</p>
-            <div className="flex gap-2 text-xs">
+            <p className="font-serif-jp text-xl">{word.meaning || "（意味未設定）"}</p>
+            <div className="flex items-center gap-2 text-xs">
+              <button
+                onClick={onReplay}
+                className="flex items-center gap-1 rounded-full border border-line px-3 py-1 text-muted hover:bg-sunk"
+              >
+                <SpeakerIcon /> もう一度聞く
+              </button>
               {word.isMeasureWord && (
-                <span className="rounded bg-neutral-100 px-2 py-0.5 dark:bg-neutral-800">
-                  量詞
-                </span>
+                <span className="rounded-full bg-sunk px-2.5 py-1">量詞</span>
               )}
               {word.needsCheck && (
-                <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                <span className="rounded-full bg-hard/15 px-2.5 py-1 text-hard">
                   要確認
                 </span>
               )}
@@ -199,13 +285,16 @@ function Card({
       </div>
 
       {flipped ? (
-        <StatusButtons value={status} onSelect={onSelect} />
+        <StatusButtons value={status} onSelect={onSelect} showKeys />
       ) : (
         <button
           onClick={onFlip}
-          className="w-full rounded-xl bg-neutral-900 py-3 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+          className="w-full rounded-xl bg-primary py-3 font-medium text-primary-ink"
         >
           めくる
+          <kbd className="ml-2 hidden rounded border border-current/30 px-1.5 text-[10px] font-normal opacity-70 [@media(pointer:fine)]:inline">
+            Space
+          </kbd>
         </button>
       )}
 
@@ -213,14 +302,19 @@ function Card({
         <button
           onClick={onPrev}
           disabled={!onPrev}
-          className="text-neutral-500 disabled:opacity-30"
+          className="text-muted hover:text-ink disabled:opacity-30"
         >
           ← 前へ
         </button>
-        <button onClick={onNext} className="text-neutral-500">
+        <button onClick={onNext} className="text-muted hover:text-ink">
           次へ（ステータスは変えない） →
         </button>
       </div>
+
+      <p className="hidden text-center text-xs text-muted [@media(pointer:fine)]:block">
+        Space / Enter {flipped ? "次へ" : "めくる"} · ← → 前後 · 1 2 3 ステータス · R
+        もう一度聞く · Esc やめる
+      </p>
     </div>
   );
 }

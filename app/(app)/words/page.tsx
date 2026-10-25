@@ -16,7 +16,7 @@ import {
 const DIRECTIONS: Direction[] = ["hanzi_to_pinyin", "pinyin_to_hanzi"];
 const STATUSES: Status[] = ["none", "easy", "hard"];
 const selectClass =
-  "rounded-lg border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700";
+  "rounded-xl border border-line bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-primary";
 
 export default function WordsPage() {
   const { words, statuses } = useLigilo();
@@ -43,7 +43,7 @@ export default function WordsPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="rise space-y-4">
       <div className="flex flex-wrap gap-2">
         <select
           className={selectClass}
@@ -89,9 +89,9 @@ export default function WordsPage() {
         placeholder="汉语・ピンイン・意味で検索"
         className={clsx(selectClass, "w-full py-2")}
       />
-      <p className="text-sm text-neutral-500">{shown.length}語</p>
+      <p className="text-sm text-muted">{shown.length}語</p>
 
-      <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+      <ul className="divide-y divide-line">
         {shown.map((w) => (
           <WordRow
             key={w.id}
@@ -119,21 +119,21 @@ function WordRow({
   return (
     <li className="py-2">
       <button onClick={onToggle} className="flex w-full items-start gap-3 text-left">
-        <span className="w-8 shrink-0 pt-1 text-xs text-neutral-400">
+        <span className="w-8 shrink-0 pt-1 text-xs text-muted">
           章{word.chapter}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="text-lg">{word.hanzi}</span>
+          <span className="font-serif-sc text-xl">{word.hanzi}</span>
           {word.posNote && (
-            <span className="ml-1 text-xs text-neutral-500">{word.posNote}</span>
+            <span className="ml-1 text-xs text-muted">{word.posNote}</span>
           )}
           {word.isMeasureWord && (
-            <span className="ml-1 text-xs text-neutral-500">量詞</span>
+            <span className="ml-1 text-xs text-muted">量詞</span>
           )}
           {word.needsCheck && (
-            <span className="ml-1 text-xs text-amber-600">要確認</span>
+            <span className="ml-1 text-xs text-hard">要確認</span>
           )}
-          <span className="block text-sm text-neutral-500">
+          <span className="block text-sm text-muted">
             {word.pinyin || "—"} · {word.meaning || "—"}
           </span>
         </span>
@@ -145,7 +145,7 @@ function WordRow({
       </button>
 
       {open && (
-        <div className="mt-3 space-y-3 rounded-xl bg-neutral-100 p-3 dark:bg-neutral-900">
+        <div className="mt-3 space-y-3 rounded-2xl bg-sunk p-3">
           <Field
             label="ピンイン"
             value={word.pinyin}
@@ -158,7 +158,7 @@ function WordRow({
           />
           {word.needsCheck && (
             <button
-              className="text-sm text-amber-700 underline dark:text-amber-300"
+              className="text-sm text-hard underline"
               onClick={() => updateWord(word.id, { needsCheck: false })}
             >
               確認済みにする
@@ -166,7 +166,7 @@ function WordRow({
           )}
           {DIRECTIONS.map((d) => (
             <div key={d} className="space-y-1">
-              <p className="text-xs text-neutral-500">{DIRECTION_LABEL[d]}</p>
+              <p className="text-xs text-muted">{DIRECTION_LABEL[d]}</p>
               <StatusButtons
                 size="sm"
                 value={statusOf(statuses, word.id, d)}
@@ -192,12 +192,12 @@ function Field({
   const [draft, setDraft] = useState(value);
   return (
     <label className="block space-y-1">
-      <span className="text-xs text-neutral-500">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => draft !== value && onSave(draft)}
-        className="w-full rounded-lg border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
+        className="w-full rounded-xl border border-line bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-primary"
       />
     </label>
   );

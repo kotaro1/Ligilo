@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { useLigilo } from "@/lib/data";
 import { buildDrill } from "@/lib/drill";
+import { RidgeLine } from "@/components/Scenery";
 import {
   DIRECTION_LABEL,
   STATUS_LABEL,
@@ -30,10 +31,10 @@ function Chip({
     <button
       onClick={onClick}
       className={clsx(
-        "rounded-full border px-3 py-1.5 text-sm",
+        "rounded-full border px-3.5 py-1.5 text-sm transition-colors",
         active
-          ? "border-transparent bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
-          : "border-neutral-300 dark:border-neutral-700",
+          ? "border-transparent bg-primary text-primary-ink"
+          : "border-line bg-bg hover:bg-sunk",
       )}
     >
       {children}
@@ -73,27 +74,51 @@ export default function HomePage() {
     if (n > 0) router.push(`/drill/${direction}`);
   }
 
+  // Enter starts the drill when nothing else has focus (a focused chip would click itself).
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Enter" || e.repeat) return;
+      if (document.activeElement !== document.body) return;
+      if (count > 0 && !starting) void start();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   const resumable = DIRECTIONS.filter((d) => {
     const p = progress[d];
     return p && p.index < p.wordIds.length;
   });
 
   return (
-    <div className="space-y-8">
+    <div className="rise space-y-8">
+      <div className="space-y-2 text-center">
+        <RidgeLine className="mx-auto w-44 text-muted" />
+        <h1 className="font-serif-jp text-2xl font-bold">今日もゆっくり、一歩ずつ</h1>
+      </div>
+
       {resumable.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-neutral-500">前回の続きから</h2>
+          <h2 className="text-sm font-semibold text-muted">前回の続きから</h2>
           {resumable.map((d) => {
             const p = progress[d]!;
             return (
               <Link
                 key={d}
                 href={`/drill/${d}`}
-                className="flex items-center justify-between rounded-xl border border-neutral-300 px-4 py-3 dark:border-neutral-700"
+                className="block rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:bg-sunk"
               >
-                <span>{DIRECTION_LABEL[d]}</span>
-                <span className="text-sm text-neutral-500">
-                  {p.index} / {p.wordIds.length}
+                <span className="flex items-center justify-between">
+                  <span>{DIRECTION_LABEL[d]}</span>
+                  <span className="text-sm text-muted">
+                    {p.index} / {p.wordIds.length}
+                  </span>
+                </span>
+                <span className="mt-2 block h-1 overflow-hidden rounded-full bg-sunk">
+                  <span
+                    className="block h-full rounded-full bg-primary"
+                    style={{ width: `${(p.index / p.wordIds.length) * 100}%` }}
+                  />
                 </span>
               </Link>
             );
@@ -101,8 +126,8 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="space-y-5">
-        <h2 className="text-sm font-semibold text-neutral-500">新しく出題する</h2>
+      <section className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-muted">新しく出題する</h2>
 
         <div className="space-y-2">
           <p className="text-sm">方向</p>
@@ -119,7 +144,7 @@ export default function HomePage() {
           <p className="text-sm">
             章{" "}
             <button
-              className="ml-2 text-xs text-neutral-500 underline"
+              className="ml-2 text-xs text-muted underline"
               onClick={() =>
                 setChapters(chapters.length === allChapters.length ? [] : allChapters)
               }
@@ -170,9 +195,14 @@ export default function HomePage() {
         <button
           onClick={start}
           disabled={count === 0 || starting}
-          className="w-full rounded-xl bg-neutral-900 py-3 font-medium text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+          className="w-full rounded-xl bg-primary py-3 font-medium text-primary-ink disabled:opacity-40"
         >
           {count === 0 ? "該当するカードがありません" : `${count}枚で始める`}
+          {count > 0 && (
+            <kbd className="ml-2 hidden rounded border border-current/30 px-1.5 text-[10px] font-normal opacity-70 [@media(pointer:fine)]:inline">
+              Enter
+            </kbd>
+          )}
         </button>
       </section>
     </div>

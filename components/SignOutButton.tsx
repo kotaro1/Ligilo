@@ -9,10 +9,7 @@ export function SignOutButton() {
   }
 
   return (
-    <button
-      onClick={signOut}
-      className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
-    >
+    <button onClick={signOut} className="text-muted hover:text-ink">
       ログアウト
     </button>
   );

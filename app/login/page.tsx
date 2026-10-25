@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { LogoMark } from "@/components/Scenery";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -34,9 +35,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm dark:bg-neutral-900">
-        <h1 className="mb-1 text-xl font-semibold">Ligilo</h1>
-        <p className="mb-6 text-sm text-neutral-500">
+      <div className="rise w-full max-w-sm rounded-3xl border border-line bg-surface p-8 shadow-sm">
+        <div className="mb-1 flex items-center gap-2">
+          <LogoMark size={32} />
+          <h1 className="font-serif-jp text-2xl font-bold">Ligilo</h1>
+        </div>
+        <p className="mb-6 text-sm text-muted">
           メールアドレスにログインリンクを送ります
         </p>
 
@@ -52,17 +56,17 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-300"
+              className="w-full rounded-xl border border-line bg-bg px-3 py-2.5 text-sm outline-none focus:border-primary"
             />
             <button
               type="submit"
               disabled={status === "sending"}
-              className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+              className="w-full rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-ink disabled:opacity-50"
             >
               {status === "sending" ? "送信中..." : "ログインリンクを送る"}
             </button>
             {status === "error" && (
-              <p className="text-sm text-red-600">{errorMessage}</p>
+              <p className="text-sm text-hard">{errorMessage}</p>
             )}
           </form>
         )}

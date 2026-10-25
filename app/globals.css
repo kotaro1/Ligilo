@@ -1,27 +1,85 @@
 @import "tailwindcss";
 
+/* 森と山のパレット。画面の色はすべてここのトークンから使う。 */
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
-  color-scheme: light dark;
+  --bg: #eef2e9; /* 朝霧 */
+  --surface: #fbfaf3; /* 和紙 */
+  --surface-sunk: #e4eadc;
+  --ink: #1f2d24; /* 深い森の影 */
+  --muted: #5f7165;
+  --line: #cfd8c6;
+  --primary: #2f5d3a; /* 杉 */
+  --primary-ink: #f3f7ee;
+  --easy: #4f8a4b; /* 若葉 */
+  --hard: #b4572d; /* 紅葉 */
+  --none: #7d8a80; /* 岩 */
+  --ridge-far: #c5d3bd;
+  --ridge-mid: #a9bf9f;
+  --ridge-near: #86a47f;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0e1812; /* 夜の森 */
+    --surface: #16241b;
+    --surface-sunk: #101d15;
+    --ink: #e6efe2;
+    --muted: #92a898;
+    --line: #26392c;
+    --primary: #8fc58f; /* 月明かりの苔 */
+    --primary-ink: #0e1812;
+    --easy: #7fc17a;
+    --hard: #e08a5a;
+    --none: #7d8a80;
+    --ridge-far: #15251b;
+    --ridge-mid: #1a2e21;
+    --ridge-near: #20382a;
+    color-scheme: dark;
   }
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunk: var(--surface-sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-easy: var(--easy);
+  --color-hard: var(--hard);
+  --color-none: var(--none);
+  --font-serif-sc: var(--font-serif-sc), "Songti SC", "SimSun", serif;
+  --font-serif-jp: var(--font-serif-jp), "Yu Mincho", "Hiragino Mincho ProN", serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--ink);
   font-family:
     system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "PingFang SC",
     "Microsoft YaHei", sans-serif;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
 }
