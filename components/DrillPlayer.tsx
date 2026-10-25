@@ -199,6 +199,26 @@ function Card({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [flipped, onFlip, onNext, onPrev, onReplay, onSelect, router]);
 
+  // Tap anywhere that is not a control: on the front, the card flips; on touch
+  // screens the right half goes next and the left half goes back.
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest || target.closest("button, a, input, select, textarea, label, header")) {
+        return;
+      }
+      if (!flipped && target.closest("[data-card]")) {
+        onFlip();
+        return;
+      }
+      if (!window.matchMedia("(pointer: coarse)").matches) return;
+      if (e.clientX < window.innerWidth / 2) onPrev?.();
+      else onNext();
+    }
+    window.addEventListener("click", onClick);
+    return () => window.removeEventListener("click", onClick);
+  }, [flipped, onFlip, onNext, onPrev]);
+
   const hanzi = (
     <p className="font-serif-sc text-7xl font-medium leading-tight">
       {word.hanzi}
@@ -236,8 +256,8 @@ function Card({
       </div>
 
       <div
+        data-card
         className="flex min-h-80 flex-col items-center justify-center gap-4 rounded-3xl border border-line bg-surface p-6 text-center shadow-sm"
-        onClick={flipped ? undefined : onFlip}
       >
         <RidgeLine className="w-32 text-line" />
         {!flipped ? (
@@ -311,6 +331,11 @@ function Card({
         </button>
       </div>
 
+      <p className="text-center text-xs text-muted [@media(pointer:fine)]:hidden">
+        {flipped
+          ? "画面の右半分をタップで次へ、左半分で前へ"
+          : "カードをタップでめくる（それ以外は右半分で次へ、左半分で前へ）"}
+      </p>
       <p className="hidden text-center text-xs text-muted [@media(pointer:fine)]:block">
         Space / Enter {flipped ? "次へ" : "めくる"} · ← → 前後 · 1 2 3 ステータス · R
         もう一度聞く · Esc やめる

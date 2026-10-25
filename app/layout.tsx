@@ -21,6 +21,7 @@ const serifJp = Noto_Serif_JP({
 export const metadata: Metadata = {
   title: "Ligilo",
   description: "中国語の単語を暗記するフラッシュカード",
+  icons: { apple: "/icons/apple-touch-icon.png" },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Ligilo" },
 };
 
