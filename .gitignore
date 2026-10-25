@@ -1,0 +1,16 @@
+/node_modules
+/.next/
+/out/
+/build
+/coverage
+.DS_Store
+*.pem
+npm-debug.log*
+.env*
+!.env.local.example
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# 単語データは公開リポジトリに入れない（docs/adr/0001 参照）
+/data/
